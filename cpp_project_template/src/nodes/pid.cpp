@@ -8,7 +8,7 @@ namespace nodes {
 
     PidNode::PidNode(std::shared_ptr<ImuNode> imu_node)
         : Node("pid_node"),
-          Kp(5), Kd(6), Ki(0),
+          Kp(10), Kd(6), Ki(0),
           base_speed(136.0f),
           last_error(0.0f), integral_(0.0f),
           imu_node_(imu_node),
@@ -96,7 +96,7 @@ namespace nodes {
             while (delta_yaw > PI) delta_yaw -= 2 * PI;
             while (delta_yaw < -PI) delta_yaw += 2 * PI;
 
-            float target_yaw = turn_direction_ * ((PI / 2.0f)- PI/18);  // ±90°
+            float target_yaw = turn_direction_ * ((PI / 2.0f)- PI/9);  // ±90°
 
             if (std::abs(delta_yaw) >= std::abs(target_yaw) * 0.92f) {
                 // Otočené

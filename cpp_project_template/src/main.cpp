@@ -14,9 +14,12 @@ int main(int argc, char *argv[])
     auto imu_node = std::make_shared<ImuNode>();
     auto pid_node = std::make_shared<PidNode>(imu_node);  // <-- Tu preposielame imu_node
 
-    rclcpp::executors::SingleThreadedExecutor executor;
+
+
+    rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(button_listener);
     executor.add_node(imu_node);
+
 
     // Spustit kalibraci
     imu_node->setMode(ImuNodeMode::CALIBRATE);
@@ -24,10 +27,13 @@ int main(int argc, char *argv[])
 
     auto start_time = imu_node->now();
     bool was_active = false;
+    auto executor_thread = std::thread([&executor](){executor.spin();});
 
     while (rclcpp::ok())
     {
-        executor.spin_some();
+
+        //executor.spin();
+
 
         auto now = imu_node->now();
         auto elapsed = (now - start_time).seconds();
