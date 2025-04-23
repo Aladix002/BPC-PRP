@@ -8,7 +8,7 @@ namespace nodes {
 
     PidNode::PidNode(std::shared_ptr<ImuNode> imu_node)
         : Node("pid_node"),
-          Kp(0.5), Kd(2.0), Ki(0.0),
+          Kp(2), Kd(6), Ki(0),
           base_speed(136.0f),
           last_error(0.0f), integral_(0.0f),
           imu_node_(imu_node),
@@ -31,9 +31,12 @@ namespace nodes {
         float front = result.front;
         float left = result.left;
         float right = result.right;
+        float side_threshold=0.5f;
+        float left_motor_speed=0, right_motor_speed=0;
+        float front_treshold = 0.3f;
 
         if (state_ == DriveState::DRIVE_FORWARD) {
-            if (front < 0.4f) {
+            if (front < front_treshold) {
                 // Zastavíme pred otočkou
                 motor_controller_->set_motor_speeds({128.0f, 128.0f});
 
@@ -61,8 +64,15 @@ namespace nodes {
             float speed_diff = Kp * error_avg + Kd * d_error + Ki * integral_;
             speed_diff = std::clamp(speed_diff, 128.0f - base_speed, base_speed - 128.0f);
 
-            float left_motor_speed = base_speed - speed_diff;
-            float right_motor_speed = base_speed + speed_diff;
+            if (left>side_threshold || right>side_threshold){
+                left_motor_speed = base_speed;
+                right_motor_speed = base_speed;
+            }
+            else
+            {
+                left_motor_speed = base_speed - speed_diff;
+                right_motor_speed = base_speed + speed_diff;
+            }
 
             motor_controller_->set_motor_speeds({
                 std::clamp(left_motor_speed, 128.0f, 2 * base_speed - 128.0f),
@@ -81,10 +91,13 @@ namespace nodes {
             while (delta_yaw > PI) delta_yaw -= 2 * PI;
             while (delta_yaw < -PI) delta_yaw += 2 * PI;
 
-            float target_yaw = turn_direction_ * (PI / 4.0f);  // ±90°
+            float target_yaw = turn_direction_ * ((PI / 2.0f)- PI/18);  // ±90°
 
-            if (std::abs(delta_yaw) >= std::abs(target_yaw) * 0.85f) {
+            if (std::abs(delta_yaw) >= std::abs(target_yaw) * 0.92f) {
                 // Otočené
+
+                motor_controller_->set_motor_speeds({128, 128});
+
                 state_ = DriveState::DRIVE_FORWARD;
                 last_error = 0;
                 integral_ = 0;
@@ -99,6 +112,7 @@ namespace nodes {
             } else {
                 motor_controller_->set_motor_speeds({128 - turn_speed, 128 + turn_speed});
             }
+
 
             RCLCPP_INFO(this->get_logger(), "[TURNING] Yaw: %.2f ΔYaw: %.2f", current_yaw, delta_yaw);
         }
