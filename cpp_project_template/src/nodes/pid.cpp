@@ -8,7 +8,7 @@ namespace nodes {
 
     PidNode::PidNode(std::shared_ptr<ImuNode> imu_node)
         : Node("pid_node"),
-          Kp(2), Kd(6), Ki(0),
+          Kp(5), Kd(6), Ki(0),
           base_speed(136.0f),
           last_error(0.0f), integral_(0.0f),
           imu_node_(imu_node),
@@ -45,7 +45,7 @@ namespace nodes {
                 turn_start_yaw_ = imu_node_->getIntegratedResults();
 
                 // Vyber smer s väčším priestorom
-                turn_direction_ = (left > right) ? 1 : -1;
+                turn_direction_ = (right > left) ? 1 : -1;
 
                 RCLCPP_INFO(this->get_logger(), "Prekážka vpredu, zastavenie. Začínam otáčať o 90° do %s strany",
                             (turn_direction_ == 1 ? "lava" : "prava"));
@@ -53,7 +53,7 @@ namespace nodes {
             }
 
             // Jazda PID reguláciou (nezmenené)
-            float error = right - left;
+            float error = left - right;
             float error_avg = (error + last_error) / 2.0f;
             float d_error = error_avg - last_error;
             integral_ += error_avg;
@@ -68,8 +68,12 @@ namespace nodes {
                 left_motor_speed = base_speed;
                 right_motor_speed = base_speed;
             }
-            else
+            else if (error < 0.2)
             {
+                left_motor_speed = base_speed - speed_diff;
+                right_motor_speed = base_speed + speed_diff;
+            }
+            else {
                 left_motor_speed = base_speed - speed_diff;
                 right_motor_speed = base_speed + speed_diff;
             }
@@ -78,6 +82,7 @@ namespace nodes {
                 std::clamp(left_motor_speed, 128.0f, 2 * base_speed - 128.0f),
                 std::clamp(right_motor_speed, 128.0f, 2 * base_speed - 128.0f)
             });
+
 
             last_error = error;
 
