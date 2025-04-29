@@ -6,9 +6,9 @@
 namespace nodes {
 
     LidarFiltrResults LidarFiltr::apply_filter(const std::vector<float>& points, float angle_start, float angle_end, float range_min, float range_max) {
-        std::vector<float> front{}, back{}, left{}, right{};
+        std::vector<float> front{}, back{}, front_left{}, front_right{}, back_left{}, back_right{};
         constexpr float PI = 3.14159265f;
-        constexpr float angle_range = PI / 8.0f;
+        constexpr float angle_range = PI / 6.0f;
         float angle_offset = PI / 4.0f;
         float angle_step = (angle_end - angle_start) / points.size();
 
@@ -26,11 +26,25 @@ namespace nodes {
                 back.push_back(distance);
             } else if (std::abs(angle - PI) <= angle_range || std::abs(angle + PI) <= angle_range) {
                 front.push_back(distance);
+
             } else if (angle > angle_range + angle_offset && angle < PI - angle_range + angle_offset) {
-                right.push_back(distance);
+            //} else if (angle > angle_range + angle_offset && angle < PI - (angle_range + angle_offset)) {
+            //} else if (angle > 3*PI/16 && angle < 8*PI/16) {
+                back_right.push_back(distance);
+
+            } else if (angle > (10*PI/16) && angle < (11*PI/16)) {
+                front_right.push_back(distance);
+
+
             } else if (angle < -angle_range - angle_offset && angle > -PI + angle_range - angle_offset) {
-                left.push_back(distance);
+            //} else if (angle < -angle_range - angle_offset && angle > -PI + (angle_range - angle_offset)) {
+            //} else if (angle < -3*PI/16 && angle > -8*PI/16) {
+                back_left.push_back(distance);
+            } else if (angle < -(10*PI/16) && angle > -(11*PI/16)) {
+                front_left.push_back(distance);
             }
+
+
         }
 
         auto average = [](const std::vector<float>& values) -> float {
@@ -41,8 +55,10 @@ namespace nodes {
         return LidarFiltrResults{
             .front = average(front),
             .back = average(back),
-            .left = average(left),
-            .right = average(right)
+            .front_left = average(front_left),
+            .front_right = average(front_right),
+            .back_left = average(back_left),
+            .back_right = average(back_right)
         };
     }
 
@@ -59,8 +75,8 @@ namespace nodes {
         LidarFiltr filter;
         auto result = filter.apply_filter(msg->ranges, msg->angle_min, msg->angle_max, msg->range_min, msg->range_max);
 
-        RCLCPP_INFO(this->get_logger(), "LIDAR Data - Front: %.2f, Back: %.2f, Left: %.2f, Right: %.2f",
-                    result.front, result.back, result.left, result.right);
+        RCLCPP_INFO(this->get_logger(), "LIDAR Data - Front: %.2f, Back: %.2f, Front_Left: %.2f, Front_Right: %.2f",
+                    result.front, result.back, result.front_left, result.front_right);
     }
 
 }

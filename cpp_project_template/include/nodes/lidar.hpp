@@ -9,8 +9,10 @@ namespace nodes {
     struct LidarFiltrResults {
         float front;
         float back;
-        float left;
-        float right;
+        float front_left;
+        float front_right;
+        float back_left;
+        float back_right;
     };
 
     class LidarFiltr {
