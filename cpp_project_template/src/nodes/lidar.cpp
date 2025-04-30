@@ -6,7 +6,7 @@
 namespace nodes {
 
     LidarFiltrResults LidarFiltr::apply_filter(const std::vector<float>& points, float angle_start, float angle_end, float range_min, float range_max) {
-        std::vector<float> front{}, back{}, front_left{}, front_right{}, back_left{}, back_right{};
+        std::vector<float> front{}, back{}, front_left{}, front_right{}, back_left{}, back_right{}, right_side{};
         constexpr float PI = 3.14159265f;
         constexpr float angle_range = PI / 6.0f;
         float angle_offset = PI / 4.0f;
@@ -34,7 +34,10 @@ namespace nodes {
 
                 if (angle > (10*PI/16) && angle < (11*PI/16)) {
                     front_right.push_back(distance);
-            }
+                }
+                if (angle > (2*PI/6) && angle < (3*PI/6)) {
+                    right_side.push_back(distance);
+                }
 
 
             } else if (angle < -angle_range - angle_offset && angle > -PI + angle_range - angle_offset) {
@@ -61,7 +64,8 @@ namespace nodes {
             .front_left = average(front_left),
             .front_right = average(front_right),
             .back_left = average(back_left),
-            .back_right = average(back_right)
+            .back_right = average(back_right),
+            .right_side = average(right_side)
         };
     }
 
