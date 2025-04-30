@@ -32,16 +32,19 @@ namespace nodes {
             //} else if (angle > 3*PI/16 && angle < 8*PI/16) {
                 back_right.push_back(distance);
 
-            } else if (angle > (10*PI/16) && angle < (11*PI/16)) {
-                front_right.push_back(distance);
+                if (angle > (10*PI/16) && angle < (11*PI/16)) {
+                    front_right.push_back(distance);
+            }
 
 
             } else if (angle < -angle_range - angle_offset && angle > -PI + angle_range - angle_offset) {
             //} else if (angle < -angle_range - angle_offset && angle > -PI + (angle_range - angle_offset)) {
             //} else if (angle < -3*PI/16 && angle > -8*PI/16) {
                 back_left.push_back(distance);
-            } else if (angle < -(10*PI/16) && angle > -(11*PI/16)) {
-                front_left.push_back(distance);
+
+                if (angle < -(10*PI/16) && angle > -(11*PI/16)) {
+                    front_left.push_back(distance);
+                }
             }
 
 

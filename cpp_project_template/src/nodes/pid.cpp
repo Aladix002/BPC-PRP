@@ -8,8 +8,8 @@ namespace nodes {
 
     PidNode::PidNode(std::shared_ptr<ImuNode> imu_node)
         : Node("pid_node"),
-          Kp(10), Kd(6), Ki(0),
-          base_speed(137.0f),
+          Kp(11), Kd(9), Ki(0),
+          base_speed(145.0f),
           last_error(0.0f), integral_(0.0f),
           imu_node_(imu_node),
           state_(DriveState::DRIVE_FORWARD),
@@ -35,7 +35,8 @@ namespace nodes {
         float back_right = result.back_right;
 
 
-        float side_threshold=0.5f;
+        float side_threshold=0.18f;
+        float front_side_threshold = 0.6f;
         float left_motor_speed=0, right_motor_speed=0;
         float front_treshold = 0.3f;
 
@@ -67,13 +68,15 @@ namespace nodes {
 
             float speed_diff = Kp * error_avg + Kd * d_error + Ki * integral_;
 
-            if (front_left<side_threshold){speed_diff+=2;}
-            if (front_right<side_threshold){speed_diff-=2;}
+            if (front_left<side_threshold){speed_diff-=1.5;}
+            if (front_right<side_threshold){speed_diff+=1.5\;}
+            RCLCPP_INFO(this->get_logger(), "[DRIVE] L: %.2f R: %.2f F: %.2f Err: %.2f", front_left, front_right, front, error);
+
 
 
             speed_diff = std::clamp(speed_diff, 128.0f - base_speed, base_speed - 128.0f);
 
-            if (back_left>side_threshold || back_right>side_threshold){
+            if (back_left>front_side_threshold || back_right>front_side_threshold){
             //if (front_left>side_threshold || front_right>side_threshold){
                 left_motor_speed = base_speed;
                 right_motor_speed = base_speed;
@@ -106,7 +109,7 @@ namespace nodes {
             while (delta_yaw > PI) delta_yaw -= 2 * PI;
             while (delta_yaw < -PI) delta_yaw += 2 * PI;
 
-            float target_yaw = turn_direction_ * ((PI / 2.0f)- PI/9);  // ±90°
+            float target_yaw = turn_direction_ * ((PI / 2.0f) - PI/9.0f); //
 
             if (std::abs(delta_yaw) >= std::abs(target_yaw) * 0.92f) {
                 // Otočené
@@ -121,7 +124,7 @@ namespace nodes {
             }
 
             // Otáčaj podľa smeru
-            float turn_speed = 4.0f;
+            float turn_speed = 10.0f;
             if (turn_direction_ == 1) {
                 motor_controller_->set_motor_speeds({128 + turn_speed, 128 - turn_speed});
             } else {
