@@ -14,6 +14,12 @@ namespace nodes {
         float back_left;
         float back_right;
         float right_side;
+        float left_side;
+        float left_side_follow_front;
+        float left_side_follow_back;
+        float right_side_follow_front;
+        float right_side_follow_back;
+
     };
 
     class LidarFiltr {
