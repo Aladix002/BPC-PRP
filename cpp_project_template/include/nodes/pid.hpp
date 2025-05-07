@@ -3,6 +3,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
+#include <std_msgs/msg/bool.hpp>  // For line sensor callback
 #include <memory>
 #include "nodes/lidar.hpp"
 #include "nodes/motor.hpp"
@@ -21,6 +22,8 @@ namespace nodes {
 
     private:
         void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
+        void left_line_callback(const std_msgs::msg::Bool::SharedPtr msg);   // Declaration
+        void right_line_callback(const std_msgs::msg::Bool::SharedPtr msg);  // Declaration
 
         float Kp, Kd, Ki;
         float base_speed;
@@ -31,13 +34,19 @@ namespace nodes {
         int turn_direction_; // -1 = doprava, 1 = doľava
         float turn_start_yaw_;
 
+        bool left_line_detected_;
+        bool right_line_detected_;
+
         std::shared_ptr<ImuNode> imu_node_;
         std::shared_ptr<MotorController> motor_controller_;
         rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_;
+        rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr left_line_sub_;  // Line sensor subscriptions
+        rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr right_line_sub_; // Line sensor subscriptions
     };
-
 
 }
 
 #endif // PID_H
+
+
 

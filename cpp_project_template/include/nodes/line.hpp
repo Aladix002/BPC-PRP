@@ -1,9 +1,9 @@
-// line_sensor_listener.hpp
 #ifndef LINE_SENSOR_LISTENER_HPP
 #define LINE_SENSOR_LISTENER_HPP
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/u_int16_multi_array.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "motor.hpp"
 
 namespace nodes {
@@ -19,6 +19,10 @@ namespace nodes {
         rclcpp::Subscription<std_msgs::msg::UInt16MultiArray>::SharedPtr line_sensors_subscriber_;
         std::shared_ptr<MotorController> motor_controller_;
 
+        // Line detection publishers
+        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr left_line_pub_;
+        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr right_line_pub_;
+
         // PID
         float Kp;
         float Kd;
@@ -28,7 +32,9 @@ namespace nodes {
         float integral_;
     };
 }
+
 #endif // LINE_SENSOR_LISTENER_HPP
+
 
 
 
