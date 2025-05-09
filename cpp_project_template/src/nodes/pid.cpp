@@ -98,7 +98,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do prave strany");
             }
             else if ((back_left < front_side_threshold) && (back_right < front_side_threshold)) {
-                turn_direction_ = 2;
+                turn_direction_ = -2;
                 full_turn = true;
                 RCLCPP_INFO(this->get_logger(), "OTACAM O 180");
             }
@@ -118,10 +118,16 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 waiting_before_turn = true;
                 RCLCPP_INFO(this->get_logger(), "Zistená prekážka vpravo – čakám pred otočkou...");
             }
+
+            // Ak sa ešte čaká pred otočením
+            if ((left_side > front_side_threshold) && !just_turned && !waiting_before_turn) {
+                // zkontroluj, ci som dostal informaci z Arrucco, ze mam zatocit dolava
+            }
+
             // Ak už čakáme – skontroluj či uplynulo 0.5 sekundy
             if (waiting_before_turn) {
                 auto time_waiting = (this->now() - wait_start_time).seconds();
-                if (time_waiting < 0.5f) {
+                if (time_waiting < 0.65f) {
                     // ridim se jednou ze sten regulatorem steny
                     //return;
                 }
@@ -131,12 +137,15 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                     state_ = DriveState::TURNING;
                     turn_start_yaw_ = imu_node_->getIntegratedResults();
                     first_time_in_drive = true; // Reset pre ďalšie DRIVE_FORWARD
-                    //if (right_side > front_side_threshold) {
+
+
+                    // logik na otaceni podle tagu
                     turn_direction_ = 1;
                     just_turned_left=false;
                     just_turned = true;
                     just_turned_right = true;
-                    //}
+
+
                     RCLCPP_INFO(this->get_logger(), "Vpravo je cesta, tak tam zatocim");
                     return;
                 }
@@ -154,7 +163,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se prave steny po otocce");
                 //error = 0.20f - right_side;
-                error=(0.8f*right_side_follow_front-right_side_follow_back);//+0.20f
+                error=1.0f*(0.9f*right_side_follow_front-right_side_follow_back);//+0.20f
                 if (error>2.0f){error=2.0f;}
                 if (error<-2.0f){error=-2.0f;}
                 if (std::isnan(error)){error=last_error;}
@@ -166,7 +175,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             else if (just_turned_right)
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se leve steny po otocce");
-                error=(left_side_follow_back-0.8f*left_side_follow_front);//+0.20f;
+                error=1.0f*(left_side_follow_back-0.9f*left_side_follow_front);//+0.20f;
                 if (error>2.0f){error=2.0f;}
                 if (error<-2.0f){error=-2.0f;}
                 if (std::isnan(error)){error=last_error;}
@@ -195,7 +204,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             else if (left_side <= front_side_threshold && left_side<right_side)//front > front_side_threshold &&
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se leve steny");
-                error=(left_side_follow_back-0.8f*left_side_follow_front);
+                error=1.0f*(left_side_follow_back-0.9f*left_side_follow_front);
                 if (error>2.0f){error=2.0f;}
                 if (error<-2.0f){error=-2.0f;}
                 if (std::isnan(error)){error=last_error;}
@@ -209,7 +218,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se prave steny");
                 //error = 0.20f - right_side;
-                error=(0.8f*right_side_follow_front-right_side_follow_back);
+                error=1.0f*(0.9f*right_side_follow_front-right_side_follow_back);
                 if (error>2.0f){error=2.0f;}
                 if (error<-2.0f){error=-2.0f;}
                 if (std::isnan(error)){error=last_error;}
@@ -276,7 +285,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             }
 
 
-            if (std::abs(delta_yaw) >= std::abs(target_yaw) * 0.97f) {
+            if (std::abs(delta_yaw) >= std::abs(target_yaw) * 1.00f) {
                 // Otočené
 
                 motor_controller_->set_motor_speeds({128, 128});
@@ -289,7 +298,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             }
 
             // Otáčaj podľa smeru
-            float turn_speed = 5.0f;
+            float turn_speed = 6.0f;
             if (turn_direction_ == 1) {
                 motor_controller_->set_motor_speeds({128 + turn_speed, 128 - turn_speed});
             } else {
