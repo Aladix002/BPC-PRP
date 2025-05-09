@@ -3,6 +3,7 @@
 #include "nodes/lidar.hpp"
 #include "nodes/imu_node.hpp"
 #include "nodes/pid.hpp"
+#include "nodes/camera.hpp"
 
 using namespace nodes;
 
@@ -11,17 +12,16 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
 
     auto button_listener = std::make_shared<ButtonListener>();
-    auto imu_node = std::make_shared<ImuNode>(); 
-    auto pid_node = std::make_shared<PidNode>(imu_node);  // <-- Tu preposielame imu_node
-
-
+    auto imu_node = std::make_shared<ImuNode>();
+    auto pid_node = std::make_shared<PidNode>(imu_node);
+    auto camera_node = std::make_shared<CameraNode>();
 
     rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(button_listener);
     executor.add_node(imu_node);
+    executor.add_node(camera_node);
 
 
-    // Spustit kalibraci
     imu_node->setMode(ImuNodeMode::CALIBRATE);
     RCLCPP_INFO(imu_node->get_logger(), "Kalibrace IMU zahájena...");
 
@@ -31,10 +31,6 @@ int main(int argc, char *argv[])
 
     while (rclcpp::ok())
     {
-
-        //executor.spin();
-
-
         auto now = imu_node->now();
         auto elapsed = (now - start_time).seconds();
 
@@ -47,13 +43,6 @@ int main(int argc, char *argv[])
         if (imu_node->getMode() == ImuNodeMode::INTEGRATE && static_cast<int>(elapsed) % 1 == 0)
         {
             auto yaw = imu_node->getIntegratedResults();
-/*
-            RCLCPP_INFO_THROTTLE(
-                imu_node->get_logger(),
-                *imu_node->get_clock(),
-                200,
-                "Aktuální úhel (yaw): %.4f", yaw
-            );*/
         }
 
         bool is_active = button_listener->is_active();
@@ -75,5 +64,6 @@ int main(int argc, char *argv[])
     rclcpp::shutdown();
     return 0;
 }
+
 
 

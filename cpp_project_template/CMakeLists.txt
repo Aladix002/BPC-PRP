@@ -35,6 +35,8 @@ set(SRC
         src/nodes/planar_imu_integrator.cpp
         src/nodes/pid.cpp
         include/nodes/pid.hpp
+        src/nodes/camera.cpp
+        include/nodes/camera.hpp
 )
 
 set(AMENT_LIBS rclcpp std_msgs sensor_msgs cv_bridge image_transport)
