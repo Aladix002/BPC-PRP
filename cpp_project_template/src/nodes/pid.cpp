@@ -1,6 +1,7 @@
 #include "nodes/pid.hpp"
 #include <algorithm>
 #include <cmath>
+#include "std_msgs/msg/int32.hpp"
 
 namespace nodes {
 
@@ -20,6 +21,11 @@ namespace nodes {
             "/bpc_prp_robot/lidar", 10,
             std::bind(&PidNode::scan_callback, this, std::placeholders::_1)
         );
+
+        aruco_sub_ = this->create_subscription<std_msgs::msg::Int32>(
+        "/bpc_prp_robot/tag_detected", 10,
+        std::bind(&PidNode::aruco_callback, this, std::placeholders::_1)
+    );
 
         motor_controller_ = std::make_shared<MotorController>();
     }
@@ -56,6 +62,8 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     float front_treshold = 0.25f;
     bool full_turn = false;
     static bool waiting_before_turn = false;
+
+        RCLCPP_INFO(this->get_logger(), "Last Scanned ArUco ID: %d", last_aruco_id_);
 
     if (state_ == DriveState::DRIVE_FORWARD)
     {
@@ -309,5 +317,11 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             //RCLCPP_INFO(this->get_logger(), "[TURNING] Yaw: %.2f ΔYaw: %.2f", current_yaw, delta_yaw);
         }
     }
+
+    void PidNode::aruco_callback(const std_msgs::msg::Int32::SharedPtr msg) {
+    RCLCPP_INFO(this->get_logger(), "Aruco callback invoked!");
+    last_aruco_id_ = msg->data;
+    RCLCPP_INFO(this->get_logger(), "Received ArUco ID: %d", last_aruco_id_);
+}
 
 }

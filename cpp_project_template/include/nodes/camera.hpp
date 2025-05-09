@@ -3,6 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/compressed_image.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "image_transport/image_transport.hpp"
 #include "cv_bridge/cv_bridge.h"
 #include <opencv2/opencv.hpp>
@@ -19,12 +20,14 @@ private:
     void image_callback(const sensor_msgs::msg::CompressedImage::SharedPtr msg);
 
     rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr image_subscriber_;
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr aruco_id_publisher_;
     image_transport::Publisher image_publisher_;
     image_transport::ImageTransport it_;
-
+    int last_aruco_id_;
 };
 
-#endif
+#endif // CAMERA_NODE_HPP
+
 
 
 
