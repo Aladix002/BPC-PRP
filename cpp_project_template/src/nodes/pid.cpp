@@ -143,8 +143,9 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                     turn_direction_ = 1;
                     just_turned_left=false;
                     just_turned = true;
-                    just_turned_right = true;
-                    //}
+                    if (front < front_side_threshold){
+                        just_turned_right = true;
+                    }
                     RCLCPP_INFO(this->get_logger(), "Vpravo je cesta, tak tam zatocim");
                     return;
                 }
