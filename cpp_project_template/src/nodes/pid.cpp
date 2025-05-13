@@ -59,7 +59,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     float front_side_threshold = 0.35f;
     float front_side_RT_threshold = 0.18f;
     float left_motor_speed=0, right_motor_speed=0;
-    float front_treshold = 0.25f;
+    float front_treshold = 0.26f;
     bool full_turn = false;
     static bool waiting_before_turn = false;
 
@@ -110,9 +110,9 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             }
             else if (back_right < front_side_threshold && (back_left > front_side_threshold)) {
                 turn_direction_ = -1;
-                just_turned_left=false;
+                just_turned_left=true;
                 just_turned = true;
-                just_turned_right = true;
+                just_turned_right = false;
                 RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do prave strany");
             }
             else if ((back_left < front_side_threshold) && (back_right < front_side_threshold)) {
@@ -151,7 +151,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             {
             // Ak sa ešte čaká pred otočením
             //tocenie podla aruco
-            if ((left_side > front_side_threshold) && (front> front_side_threshold) &&!just_turned && !waiting_before_turn) {
+            if ((left_side > front_side_threshold) && (front> front_side_threshold+0.2f) &&!just_turned && !waiting_before_turn) {
                 if (last_aruco_id_ == 0 || last_aruco_id_ == 10) {
                     RCLCPP_INFO(this->get_logger(),
                         "Ignorujem lavu odbočku – posledné ArUco ID %d hovorí ísť rovno.", last_aruco_id_);
@@ -168,7 +168,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 }
 
             }
-            else if ((right_side > front_side_threshold) && (front > front_side_threshold) && !just_turned && !waiting_before_turn) {
+            else if ((right_side > front_side_threshold) && (front > front_side_threshold+0.2f) && !just_turned && !waiting_before_turn) {
                 // Ak posledný ArUco ID hovorí ísť rovno a máme možnosť – neodbočuj doprava, choď rovno
                 //tocenie podla aruco
                 if (last_aruco_id_ == 0 || last_aruco_id_ == 10) {
@@ -217,12 +217,14 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             //if (((front > front_side_threshold && front_left > front_side_threshold) && ((front > front_side_threshold && front_right > front_side_threshold))
             //   || (back_left>front_side_threshold && back_right>front_side_threshold))){
 
+            float error_correction=0.82f;
+
             //ridim v koridoru
             if (just_turned_left)
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se prave steny po otocce");
                 //error = 0.20f - right_side;
-                error=(0.8f*right_side_follow_front-right_side_follow_back);//+0.20f
+                error=error_correction*(0.8f*right_side_follow_front-right_side_follow_back);//+0.20f
                 if (error>2.0f){error=2.0f;}
                 if (error<-2.0f){error=-2.0f;}
                 if (std::isnan(error)){error=last_error;}
@@ -234,7 +236,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             else if (just_turned_right)
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se leve steny po otocce");
-                error=(left_side_follow_back-0.8f*left_side_follow_front);//+0.20f;
+                error=error_correction*(left_side_follow_back-0.8f*left_side_follow_front);//+0.20f;
                 if (error>2.0f){error=2.0f;}
                 if (error<-2.0f){error=-2.0f;}
                 if (std::isnan(error)){error=last_error;}
@@ -243,27 +245,11 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 d_error = error_avg - last_error;
                 speed_diff = Kp * error_avg + Kd * d_error;
             }
-            else if (((front > front_side_threshold && left_side > front_side_threshold) && ((front > front_side_threshold && right_side > front_side_threshold))
-                || (back_left>front_side_threshold && back_right>front_side_threshold)))
-            {
-                //front_side_threshold
-
-                speed_diff=0;
-                RCLCPP_INFO(this->get_logger(), "Vidim krizovatku +, jedu rovne");
-            }
-            else if ((front_left <= front_side_threshold && front_right <= front_side_threshold))
-            {
-                error = back_left - back_right;
-                error_avg = (error + last_error) / 2.0f;
-                d_error = error_avg - last_error;
-                speed_diff = Kp * error_avg + Kd * d_error + Ki * integral_;
-                RCLCPP_INFO(this->get_logger(), "Ridim se obema regulatory");
-            }
             // risim se jenom levou stenou
             else if (left_side <= front_side_threshold && left_side<right_side)//front > front_side_threshold &&
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se leve steny");
-                error=(left_side_follow_back-0.8f*left_side_follow_front);
+                error=error_correction*(left_side_follow_back-0.8f*left_side_follow_front);
                 if (error>2.0f){error=2.0f;}
                 if (error<-2.0f){error=-2.0f;}
                 if (std::isnan(error)){error=last_error;}
@@ -277,7 +263,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se prave steny");
                 //error = 0.20f - right_side;
-                error=(0.8f*right_side_follow_front-right_side_follow_back);
+                error=error_correction*(0.8f*right_side_follow_front-right_side_follow_back);
                 if (error>2.0f){error=2.0f;}
                 if (error<-2.0f){error=-2.0f;}
                 if (std::isnan(error)){error=last_error;}
@@ -286,6 +272,25 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 d_error = error_avg - last_error;
                 speed_diff = Kp * error_avg + Kd * d_error;
             }
+            // ridim obema stranami
+            else if ((front_left <= front_side_threshold && front_right <= front_side_threshold))
+            {
+                error = back_left - back_right;
+                error_avg = (error + last_error) / 2.0f;
+                d_error = error_avg - last_error;
+                speed_diff = Kp * error_avg + Kd * d_error + Ki * integral_;
+                RCLCPP_INFO(this->get_logger(), "Ridim se obema regulatory");
+            }
+            // neridim
+            else if (((front > front_side_threshold && left_side > front_side_threshold) && ((front > front_side_threshold && right_side > front_side_threshold))
+                || (back_left>front_side_threshold && back_right>front_side_threshold)))
+            {
+                //front_side_threshold
+
+                speed_diff=0;
+                RCLCPP_INFO(this->get_logger(), "Vidim krizovatku +, jedu rovne");
+            }
+
 
             if (speed_diff!=0)
             {
