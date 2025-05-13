@@ -257,7 +257,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 //if (right_side>follow_side_threshold && right_side_follow_front>right_side_follow_back){speed_diff=speed_diff-3.0f;}
             }
             // ridim obema stranami
-            else if ((front_left <= front_side_threshold-0.05f && front_right <= front_side_threshold-0.05f))
+            else if ((front_left <= front_side_threshold-0.1f && front_right <= front_side_threshold-0.05f))
             {
                 error = back_left - back_right;
                 error_avg = (error + last_error) / 2.0f;
@@ -266,7 +266,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 RCLCPP_INFO(this->get_logger(), "Ridim se obema regulatory");
             }
             // risim se jenom levou stenou
-            else if (left_side <= front_side_threshold+0.1f && back_left<back_right)//front > front_side_threshold &&
+            else if (front_left <= front_side_threshold+0.1f && back_left<back_right)//front > front_side_threshold &&
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se leve steny");
                 error=error_correction*(left_side_follow_back-error_side_correction*left_side_follow_front);
@@ -282,7 +282,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 //if (left_side>follow_side_threshold && left_side_follow_front>left_side_follow_back){speed_diff=speed_diff+3.0f;}
             }
             // ridim se jenom pravou stenou
-            else if (right_side <= front_side_threshold+0.1f)
+            else if (front_right <= front_side_threshold+0.05f)
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se prave steny");
                 //error = 0.20f - right_side;
