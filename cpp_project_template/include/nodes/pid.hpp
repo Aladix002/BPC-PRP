@@ -58,6 +58,7 @@ namespace nodes {
 
         // Last seen ArUco tag
         int last_aruco_id_ = -1;
+        rclcpp::Time last_aruco_time_;
     };
 
 }
