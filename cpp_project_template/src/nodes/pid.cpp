@@ -32,7 +32,6 @@ namespace nodes {
     bool just_turned = false;
     bool just_turned_left = false;
     bool just_turned_right = false;
-    bool aruco_turn = false;
 
 
     rclcpp::Time drive_forward_start_time_;
@@ -101,22 +100,16 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             first_time_in_drive = true; // Reset pre ďalšie DRIVE_FORWARD
             waiting_before_turn = false;
 
-            if ((back_right > front_side_threshold) && (back_left > front_side_threshold) && (last_aruco_id_ == 12)) {
+
+            if (back_right > front_side_threshold && (back_left < front_side_threshold)) {
                 turn_direction_ = 1;
                 just_turned_left=false;
                 just_turned = true;
                 just_turned_right = true;
                 RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do prave strany");
             }
-            if ((back_right > front_side_threshold) && (back_left > front_side_threshold) && (last_aruco_id_ == 11)) {
+            else if (back_right < front_side_threshold && (back_left > front_side_threshold)) {
                 turn_direction_ = -1;
-                just_turned_left=true;
-                just_turned = true;
-                just_turned_right = false;
-                RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do lavej strany");
-            }
-            else if (back_right > front_side_threshold && (back_left < front_side_threshold)) {
-                turn_direction_ = 1;
                 just_turned_left=false;
                 just_turned = true;
                 just_turned_right = true;
@@ -127,13 +120,29 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 full_turn = true;
                 RCLCPP_INFO(this->get_logger(), "OTACAM O 180");
             }
-            //tocenie podla aruco
-            else {
+            else if ((back_right > front_side_threshold) && (back_left > front_side_threshold) && (last_aruco_id_ == 11)) {
                 turn_direction_ = -1;
+                just_turned_left=true;
+                just_turned = true;
+                just_turned_right = false;
+                last_aruco_id_ = -1;
+                RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do lavej strany");
+            }
+            else if ((back_right > front_side_threshold) && (back_left > front_side_threshold) && (last_aruco_id_ == 12)) {
+                turn_direction_ = 1;
+                just_turned_left=false;
+                just_turned = true;
+                just_turned_right = true;
+                last_aruco_id_ = -1;
+                RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do prave strany");
+            }
+            else {
+                //if (back_right>back_left){turn_direction_ = 1;}
+                //else{turn_direction_ = -1;}
+                turn_direction_ = 1;
                 just_turned_right=false;
                 just_turned = true;
                 just_turned_left = true;
-                aruco_turn = true;
                 RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do leve strany");
             }
             return;
@@ -142,30 +151,41 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             {
             // Ak sa ešte čaká pred otočením
             //tocenie podla aruco
-            if ((left_side > front_side_threshold) && !just_turned && !waiting_before_turn) {
+            if ((left_side > front_side_threshold) && (front> front_side_threshold) &&!just_turned && !waiting_before_turn) {
+                if (last_aruco_id_ == 0 || last_aruco_id_ == 10) {
+                    RCLCPP_INFO(this->get_logger(),
+                        "Ignorujem lavu odbočku – posledné ArUco ID %d hovorí ísť rovno.", last_aruco_id_);
+                    last_aruco_id_=-1;
+                    return;
+                }
                 if (last_aruco_id_ == 1 || last_aruco_id_ == 11) {
                     wait_start_time = this->now();
                     waiting_before_turn = true;
                     turn_direction_ = -1;
+                    last_aruco_id_=-1;
                     RCLCPP_INFO(this->get_logger(), "Zistená medzera vľavo a posledné ArUco ID %d – pripravujem otočku doľava...", last_aruco_id_);
-                    aruco_turn = true;
                     return;
                 }
+
             }
-            else if ((right_side > front_side_threshold) && !just_turned && !waiting_before_turn) {
+            else if ((right_side > front_side_threshold) && (front > front_side_threshold) && !just_turned && !waiting_before_turn) {
                 // Ak posledný ArUco ID hovorí ísť rovno a máme možnosť – neodbočuj doprava, choď rovno
                 //tocenie podla aruco
                 if (last_aruco_id_ == 0 || last_aruco_id_ == 10) {
                     RCLCPP_INFO(this->get_logger(),
                         "Ignorujem pravú odbočku – posledné ArUco ID %d hovorí ísť rovno.", last_aruco_id_);
+                    last_aruco_id_=-1;
                     return;
                 }
-
-                wait_start_time = this->now();
-                waiting_before_turn = true;
-                turn_direction_ = 1;
-                RCLCPP_INFO(this->get_logger(), "Zistená medzera vpravo – pripravujem otočku doprava...");
-                return;
+                if (last_aruco_id_ == 2 || last_aruco_id_ == 12)
+                {
+                    wait_start_time = this->now();
+                    waiting_before_turn = true;
+                    turn_direction_ = 1;
+                    last_aruco_id_=-1;
+                    RCLCPP_INFO(this->get_logger(), "Zistená medzera vpravo – pripravujem otočku doprava...");
+                    return;
+                }
             }
 
             if (waiting_before_turn) {
