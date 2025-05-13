@@ -32,6 +32,7 @@ namespace nodes {
     bool just_turned = false;
     bool just_turned_left = false;
     bool just_turned_right = false;
+    bool aruco_turn = false;
 
 
     rclcpp::Time drive_forward_start_time_;
@@ -100,12 +101,19 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             first_time_in_drive = true; // Reset pre ďalšie DRIVE_FORWARD
             waiting_before_turn = false;
 
-            if ((back_right > front_side_threshold) && (back_left > front_side_threshold) && (last_aruco_id_ != 1) && (last_aruco_id_ != 11)) {
+            if ((back_right > front_side_threshold) && (back_left > front_side_threshold) && (last_aruco_id_ == 12)) {
                 turn_direction_ = 1;
                 just_turned_left=false;
                 just_turned = true;
                 just_turned_right = true;
                 RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do prave strany");
+            }
+            if ((back_right > front_side_threshold) && (back_left > front_side_threshold) && (last_aruco_id_ == 11)) {
+                turn_direction_ = -1;
+                just_turned_left=true;
+                just_turned = true;
+                just_turned_right = false;
+                RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do lavej strany");
             }
             else if (back_right > front_side_threshold && (back_left < front_side_threshold)) {
                 turn_direction_ = 1;
@@ -119,11 +127,13 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 full_turn = true;
                 RCLCPP_INFO(this->get_logger(), "OTACAM O 180");
             }
+            //tocenie podla aruco
             else {
                 turn_direction_ = -1;
                 just_turned_right=false;
                 just_turned = true;
                 just_turned_left = true;
+                aruco_turn = true;
                 RCLCPP_INFO(this->get_logger(), "Prekážka vpredu – začínam otáčať o 90° do leve strany");
             }
             return;
@@ -131,19 +141,20 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
         else
             {
             // Ak sa ešte čaká pred otočením
+            //tocenie podla aruco
             if ((left_side > front_side_threshold) && !just_turned && !waiting_before_turn) {
                 if (last_aruco_id_ == 1 || last_aruco_id_ == 11) {
                     wait_start_time = this->now();
                     waiting_before_turn = true;
                     turn_direction_ = -1;
                     RCLCPP_INFO(this->get_logger(), "Zistená medzera vľavo a posledné ArUco ID %d – pripravujem otočku doľava...", last_aruco_id_);
+                    aruco_turn = true;
                     return;
                 }
             }
-
-            // --- ODBOČKA VPRAVO ---
-            if ((right_side > front_side_threshold) && !just_turned && !waiting_before_turn) {
+            else if ((right_side > front_side_threshold) && !just_turned && !waiting_before_turn) {
                 // Ak posledný ArUco ID hovorí ísť rovno a máme možnosť – neodbočuj doprava, choď rovno
+                //tocenie podla aruco
                 if (last_aruco_id_ == 0 || last_aruco_id_ == 10) {
                     RCLCPP_INFO(this->get_logger(),
                         "Ignorujem pravú odbočku – posledné ArUco ID %d hovorí ísť rovno.", last_aruco_id_);
@@ -157,7 +168,6 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 return;
             }
 
-            // --- REALIZÁCIA OTOČKY ---
             if (waiting_before_turn) {
                 auto time_waiting = (this->now() - wait_start_time).seconds();
                 if (time_waiting < 0.5f) {
@@ -171,7 +181,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                     first_time_in_drive = true;
 
                     just_turned = true;
-                    just_turned_left = (turn_direction_ == -1);
+                    just_turned_left = (turn_direction_ == -1 && front < front_side_threshold);
                     just_turned_right = (turn_direction_ == 1 && front < front_side_threshold);
 
                     RCLCPP_INFO(this->get_logger(), "Otočka %s, ArUco ID %d.",
@@ -293,8 +303,8 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
 
             float target_yaw = imu_node_->getIntegratedResults();
             if (full_turn) {
-                 target_yaw = turn_direction_ * (PI / 2.0f);
-                full_turn = false;
+                 target_yaw = turn_direction_ * (PI / 2.0f) + PI/18.0f;
+                 full_turn = false;
             }
             else {
                  target_yaw = turn_direction_ * ((PI / 2.0f) - PI/18.0f);
@@ -332,21 +342,33 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     bool collect_single_digit = false;
     bool collect_double_digit = true;
 
-    //ignoruje vpravo
-    if (std::to_string(new_id).find('2') != std::string::npos) {
-        return;
+    auto now = this->now();
+
+    // Skontroluj čas, ktorý uplynul od posledného uloženia ArUco ID
+    if (last_aruco_time_.get_clock_type() == now.get_clock_type()) {
+        double time_since_last = (now - last_aruco_time_).seconds();
+
+        // Ak uplynulo menej než 3 sekundy, ignoruj nové ID
+        if (time_since_last < 3.0) {
+            RCLCPP_INFO(this->get_logger(), "Počkám ešte %.2f sekundy pred uložením nového ArUco ID.", 3.0 - time_since_last);
+            return; // Neuložíme nové ID ešte
+        }
+    } else {
+        RCLCPP_WARN(this->get_logger(), "Nekompatibilné časové zdroje – preskakujem výpočet rozdielu.");
     }
 
+    // Ak je aktuálne ID v požiadavkách (1-ciferné alebo 2-ciferné)
     if (collect_single_digit && new_id >= 0 && new_id <= 9) {
         last_aruco_id_ = new_id;
-        last_aruco_time_ = this->now();
+        last_aruco_time_ = now; // Až teraz ukladáme čas, keď uplynulo 3 sekundy
         RCLCPP_INFO(this->get_logger(), "Ukladám 1-ciferné ArUco ID: %d", new_id);
     } else if (collect_double_digit && new_id >= 10 && new_id <= 12) {
         last_aruco_id_ = new_id;
-        last_aruco_time_ = this->now();
+        last_aruco_time_ = now; // Až teraz ukladáme čas, keď uplynulo 3 sekundy
         RCLCPP_INFO(this->get_logger(), "Ukladám 2-ciferné ArUco ID: %d", new_id);
     } else {
         RCLCPP_INFO(this->get_logger(), "ID %d nespĺňa aktuálny režim – ignorujem.", new_id);
     }
 }
+
 }
