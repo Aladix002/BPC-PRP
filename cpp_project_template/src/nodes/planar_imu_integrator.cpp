@@ -21,11 +21,13 @@ namespace algorithms {
     float PlanarImuIntegrator::getYaw() const {
         float normalized = std::fmod(theta_, 2 * static_cast<float>(M_PI));
 
+        /*
         if (normalized <= -M_PI) {
             normalized += 2 * static_cast<float>(M_PI);
         } else if (normalized > M_PI) {
             normalized -= 2 * static_cast<float>(M_PI);
-        }
+        }*/
+        //normalized=ImuNode::normalize_angle()
 
         return normalized;
     }

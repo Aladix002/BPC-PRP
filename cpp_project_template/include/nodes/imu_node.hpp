@@ -34,6 +34,8 @@ namespace nodes {
         // Reset the class
         void reset_imu();
 
+        static float normalize_angle(float angle);
+
     private:
 
         void calibrate();
