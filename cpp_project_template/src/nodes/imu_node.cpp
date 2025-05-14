@@ -39,6 +39,8 @@ ImuNodeMode ImuNode::getMode() {
 }
 
 float ImuNode::getIntegratedResults() {
+    float raw_yaw = planar_integrator_.getYaw();
+    return normalize_angle(raw_yaw);
     return planar_integrator_.getYaw();  // radians
 }
 
@@ -66,6 +68,12 @@ void ImuNode::on_imu_msg(const sensor_msgs::msg::Imu::SharedPtr msg) {
     last_stamp = stamp;
 }
 
+    float ImuNode::normalize_angle(float angle) {
+        while (angle > M_PI) angle -= 2.0f * M_PI;
+        while (angle < -M_PI) angle += 2.0f * M_PI;
+        return angle;
+    }
+
 void ImuNode::calibrate() {
     setMode(ImuNodeMode::CALIBRATE);
 }
@@ -73,5 +81,7 @@ void ImuNode::calibrate() {
 void ImuNode::integrate() {
     setMode(ImuNodeMode::INTEGRATE);
 }
+
+
 
 } // namespace nodes
