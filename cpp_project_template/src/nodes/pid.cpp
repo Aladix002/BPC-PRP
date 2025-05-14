@@ -37,6 +37,11 @@ namespace nodes {
     rclcpp::Time drive_forward_start_time_;
     float drive_forward_duration_threshold_ = 3.5f; // čas v sekundách po ktorom resetujeme just_turned
 
+    float round_to_nearest_rad90(float angle_rad) {
+        int quadrant = static_cast<int>(std::round(angle_rad / M_PI_2));
+        return quadrant * M_PI_2;
+    }
+
 void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     LidarFiltr filter;
     auto result = filter.apply_filter(msg->ranges, msg->angle_min, msg->angle_max, msg->range_min, msg->range_max);
@@ -266,7 +271,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 RCLCPP_INFO(this->get_logger(), "Ridim se obema regulatory");
             }
             // risim se jenom levou stenou
-            else if (left_side <= front_side_threshold+0.1f && back_left<back_right)//front > front_side_threshold &&
+            else if (front_left <= front_side_threshold+0.05f && back_left<back_right)//front > front_side_threshold &&
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se leve steny");
                 error=error_correction*(left_side_follow_back-error_side_correction*left_side_follow_front);
@@ -282,7 +287,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 //if (left_side>follow_side_threshold && left_side_follow_front>left_side_follow_back){speed_diff=speed_diff+3.0f;}
             }
             // ridim se jenom pravou stenou
-            else if (right_side <= front_side_threshold+0.1f)
+            else if (front_right <= front_side_threshold+0.05f)
             {
                 RCLCPP_INFO(this->get_logger(), "Drzim se prave steny");
                 //error = 0.20f - right_side;
@@ -337,24 +342,38 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     }
         else if (state_ == DriveState::TURNING) {
             float current_yaw = imu_node_->getIntegratedResults();
-            float delta_yaw = current_yaw - turn_start_yaw_;
+            //float delta_yaw = current_yaw - turn_start_yaw_;
+            //float delta_yaw =turn_start_yaw_- current_yaw;
+
 
             // Normalizácia
-            while (delta_yaw > PI) delta_yaw -= 2 * PI;
-            while (delta_yaw < -PI) delta_yaw += 2 * PI;
 
-            float target_yaw = imu_node_->getIntegratedResults();
-            if (full_turn) {
-                 target_yaw = turn_direction_ * (PI / 2.0f) + PI/18.0f;
-                 full_turn = false;
-            }
-            else {
-                 target_yaw = turn_direction_ * ((PI / 2.0f) - PI/18.0f);
-            }
+            //float target_yaw = round_to_nearest_rad90(ImuNode::normalize_angle(turn_start_yaw_ + turn_direction_ * M_PI_2));
+            //turn_start_yaw_
+            //current_yaw
 
 
-            if (std::abs(delta_yaw) >= std::abs(target_yaw) * 0.97f) {
-                // Otočené
+            //float target_yaw; // = imu_node_->getIntegratedResults();
+
+            //if (full_turn) {
+            //     target_yaw = turn_direction_ * (PI / 2.0f) + PI/18.0f;
+            //     full_turn = false;
+            //}
+            //else {
+            //float target_yaw = turn_direction_ * ((PI / 2.0f) - PI/18.0f);
+            float target_yaw = round_to_nearest_rad90(ImuNode::normalize_angle(turn_start_yaw_ - turn_direction_ * M_PI_2));
+            //}
+            float delta_yaw =ImuNode::normalize_angle(target_yaw-current_yaw);//std::abs(
+
+            //while (delta_yaw > PI) delta_yaw -= 2 * PI;
+            //while (delta_yaw < -PI) delta_yaw += 2 * PI;
+
+
+
+//            if (std::abs(delta_yaw) >= std::abs(target_yaw) * 0.97f) {
+            if (std::abs(delta_yaw) <= 0.03f) {
+
+            // Otočené
 
                 motor_controller_->set_motor_speeds({128, 128});
 
@@ -366,7 +385,10 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             }
 
             // Otáčaj podľa smeru
-            float turn_speed = 5.0f;
+            float turn_speed;
+            if (std::abs(delta_yaw)>0.8f){turn_speed=5.0f;}
+            else{turn_speed=3.0f;}
+
             if (turn_direction_ == 1) {
                 motor_controller_->set_motor_speeds({128 + turn_speed, 128 - turn_speed});
             } else {
@@ -374,7 +396,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             }
 
 
-            //RCLCPP_INFO(this->get_logger(), "[TURNING] Yaw: %.2f ΔYaw: %.2f", current_yaw, delta_yaw);
+            RCLCPP_INFO(this->get_logger(), "[TURNING] Yaw: %.2f ΔYaw: %.2f ΔTargetYaw: %.2f", current_yaw, delta_yaw,target_yaw);
         }
     }
 
