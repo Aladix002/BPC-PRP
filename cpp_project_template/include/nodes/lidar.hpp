@@ -19,6 +19,8 @@ namespace nodes {
         float left_side_follow_back;
         float right_side_follow_front;
         float right_side_follow_back;
+        float ffront_right;
+        float ffront_left;
 
     };
 

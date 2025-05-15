@@ -9,7 +9,7 @@ namespace nodes
                                                float range_min, float range_max)
     {
         std::vector<float> front{}, back{}, front_left{}, front_right{}, back_left{}, back_right{}, right_side{}, left_side{},
-                          left_side_follow_front{}, left_side_follow_back{}, right_side_follow_front{}, right_side_follow_back{};
+                          left_side_follow_front{}, left_side_follow_back{}, right_side_follow_front{}, right_side_follow_back{}, ffront_right{}, ffront_left{};
 
         constexpr float PI = 3.14159265f;
         constexpr float angle_range = PI / 6.0f;
