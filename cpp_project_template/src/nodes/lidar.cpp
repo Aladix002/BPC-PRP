@@ -49,7 +49,7 @@ namespace nodes
                 {
                     right_side.push_back(distance);
                 }
-                if (angle > (15 * PI / 24) && angle < (16 * PI / 24))
+                if (angle > (13 * PI / 24) && angle < (15 * PI / 24))
                 {
                     right_side_follow_front.push_back(distance);
                 }
@@ -72,7 +72,7 @@ namespace nodes
                 {
                     left_side.push_back(distance);
                 }
-                if (angle < -(15 * PI / 24) && angle > -(16 * PI / 24))
+                if (angle < -(13 * PI / 24) && angle > -(15 * PI / 24))
                 {
                     left_side_follow_front.push_back(distance);
                 }
