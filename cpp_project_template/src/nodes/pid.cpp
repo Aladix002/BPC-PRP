@@ -10,7 +10,7 @@ namespace nodes {
     PidNode::PidNode(std::shared_ptr<ImuNode> imu_node)
         : Node("pid_node"),
           Kp(6.0f), Kd(4.0f), Ki(0), // Ki se nepouziva, tak ani nenastavuj hoidnotu
-          base_speed(145.0f),
+          base_speed(142.0f),
           last_error(0.0f), integral_(0.0f),
           imu_node_(imu_node),
           state_(DriveState::DRIVE_FORWARD),
@@ -200,7 +200,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
 
             if (waiting_before_turn) {
                 auto time_waiting = (this->now() - wait_start_time).seconds();
-                if (time_waiting < 1.22f) {
+                if (time_waiting < 1.31f) {
                     // ešte čakáme pred otočkou
                     return;
                 } else {
@@ -229,8 +229,8 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             float speed_diff;
 
             float error_side_correction=1.5f;
-            float error_action_threshold=0.02f;
-            float side_too_far_threshhold=0.25f;
+            float error_action_threshold=0.03f;
+            float side_too_far_threshhold=0.22f;
 
 
             //ridim v koridoru
@@ -259,7 +259,8 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             // ridim obema stranami
             //else if ((front_left <= front_side_threshold-0.05f && front_right <= front_side_threshold-0.05f))
             else if (left_side_follow_back <= front_side_threshold && left_side_follow_front <= front_side_threshold &&
-                right_side_follow_back <= front_side_threshold && right_side_follow_front <= front_side_threshold)
+                right_side_follow_back <= front_side_threshold && right_side_follow_front <= front_side_threshold &&
+                front_left <= front_side_threshold && front_right <= front_side_threshold)
             {
                 error = back_left - back_right;
                 error_avg = (error + last_error) / 2.0f;
@@ -299,8 +300,8 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
                 RCLCPP_INFO(this->get_logger(), "Vidim krizovatku +, jedu rovne");
             }
 
-            if (front_left<side_threshold){speed_diff-=1.0f;}
-            if (front_right<side_threshold){speed_diff+=1.0f;}
+            if (front_left<side_threshold && front_left<front_right){speed_diff=-1.0f;}
+            else if (front_right<side_threshold){speed_diff=1.0f;}
 
 
             //speed_diff = std::clamp(speed_diff, 128.0f - base_speed, base_speed - 128.0f);
@@ -361,8 +362,8 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     void PidNode::aruco_callback(const std_msgs::msg::Int32::SharedPtr msg) {
     int new_id = msg->data;
 
-    bool collect_single_digit = false;
-    bool collect_double_digit = true;
+    bool collect_single_digit = true;
+    bool collect_double_digit = false;
 
     auto now = this->now();
 
