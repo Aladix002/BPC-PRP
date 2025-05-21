@@ -7,7 +7,7 @@ Tento projekt implementuje softvér pre autonomneho robota, ktorého úlohou je 
 - **IMU** pre kontrolu otáčania na križovatkách.
 - **Kameru s ArUco značkami** na určenie najkratšej cesty von.
 
-Riadenie je postavené na neholonomnej platforme so stranovo poháňanými kolesami. Projekt vznikol ako súčasť kurzu *BPC-PRP (Practical Robotics and Computer Vision)* na FIT VUT.
+Riadenie je postavené na neholonomnej platforme so stranovo poháňanými kolesami. Projekt vznikol ako súčasť kurzu *BPC-PRP (Practical Robotics and Computer Vision)* na FEKT VUT.
 
 # Autori 
 Filip Botlo, Jaub Kolář 
