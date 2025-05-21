@@ -10,6 +10,5 @@ Tento projekt implementuje softvér pre autonomneho robota, ktorého úlohou je 
 Riadenie je postavené na neholonomnej platforme so stranovo poháňanými kolesami. Projekt vznikol ako súčasť kurzu *BPC-PRP (Practical Robotics and Computer Vision)* na FIT VUT.
 
 # Autori 
-Filip Botlo 
-Jaub Kolář 
+Filip Botlo, Jaub Kolář 
 
