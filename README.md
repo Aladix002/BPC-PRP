@@ -1,14 +1,15 @@
-# BPC-PRP Sites
+## BPC-PRP
 
-These repo servers as a learning materials and support for student of the BPC-PRP (Practical Robotics and Computer Vision) course. 
+Tento projekt implementuje softvér pre autonomneho robota, ktorého úlohou je nájsť cestu z bludiska veľkosti max. 8×8 buniek (každá 40×40 cm). Robot využíva:
 
-Please follow the given materials:
- - [Lab Book](https://robotics-but.github.io/BPC-PRP/)
- - C++ Project Template
- - Robot HW and SW [Fenrir Project](https://github.com/Robotics-BUT/fenrir-project)
+- **ROS 2** framework pre modulárne riadenie a senzorickú integráciu.
+- **LiDAR** na detekciu stien a orientáciu v priestore.
+- **IMU** pre kontrolu otáčania na križovatkách.
+- **Kameru s ArUco značkami** na určenie najkratšej cesty von.
 
-## Authors
- - Adam Ligocki
- - Petr Šopák
- - Jakub Minařík
- - ...
+Riadenie je postavené na neholonomnej platforme so stranovo poháňanými kolesami. Projekt vznikol ako súčasť kurzu *BPC-PRP (Practical Robotics and Computer Vision)* na FIT VUT.
+
+# Autori 
+Filip Botlo 
+Jaub Kolář 
+
