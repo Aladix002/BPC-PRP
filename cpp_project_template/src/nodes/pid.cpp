@@ -36,7 +36,7 @@ namespace nodes {
 
 
     rclcpp::Time drive_forward_start_time_;
-    float drive_forward_duration_threshold_ = 2.0f; // čas v sekundách po ktorom resetujeme just_turned
+    float drive_forward_duration_threshold_ = 1.5f; // čas v sekundách po ktorom resetujeme just_turned
 
     float round_to_nearest_rad90(float angle_rad) {
         int quadrant = static_cast<int>(std::round(angle_rad / M_PI_2));
@@ -64,7 +64,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
     float ffront_left = result.ffront_left;
         float ffront_right = result.ffront_right;
 
-    float side_threshold=0.19f;
+    float side_threshold=0.20f;
     float front_side_threshold = 0.35f;
     float front_side_RT_threshold = 0.18f;
     float left_motor_speed=0, right_motor_speed=0;
@@ -230,7 +230,7 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
 
             float error_side_correction=1.5f;
             float error_action_threshold=0.03f;
-            float side_too_far_threshhold=0.22f;
+            float side_too_far_threshhold=0.23f;
 
 
             //ridim v koridoru
@@ -259,8 +259,8 @@ void PidNode::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
             // ridim obema stranami
             //else if ((front_left <= front_side_threshold-0.05f && front_right <= front_side_threshold-0.05f))
             else if (left_side_follow_back <= front_side_threshold && left_side_follow_front <= front_side_threshold &&
-                right_side_follow_back <= front_side_threshold && right_side_follow_front <= front_side_threshold &&
-                front_left <= front_side_threshold && front_right <= front_side_threshold)
+                right_side_follow_back <= front_side_threshold && right_side_follow_front <= front_side_threshold)
+//&& front_left <= front_side_threshold && front_right <= front_side_threshold)
             {
                 error = back_left - back_right;
                 error_avg = (error + last_error) / 2.0f;
